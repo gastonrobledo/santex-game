@@ -1,0 +1,62 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+		<script type="text/javascript" src="js/jaws-engine.js"></script>
+		<script type="text/javascript">
+			var player
+			var game = {
+				setup: function() { 
+					var tile_map = new TileMap({cell_size:[32,32]});
+					player = new jaws.Sprite({x:0, y:0, scale:1, anchor:'center'});
+					player.move = function(x, y) {
+			        	jaws.log("Player: " + player.rect().toString())
+			          
+			          	// Have our tile map return the items that occupy the cells which are touched by player.rect
+			          	// If there's any items inside player.rect, reverse the movement (-> stand still)
+			          	this.x += x
+			          	if(tile_map.atRect(player.rect()).length > 0) { this.x -= x }
+
+			          	// Same as above but for vertical movement
+			          	this.y += y
+			          	if(tile_map.atRect(player.rect()).length > 0) { this.y -= y }
+			        }
+
+			    	var anim = new jaws.Animation({sprite_sheet: "images/gb_walk.png", frame_size: [100,250], frame_duration: 100, orientation:"right"})
+        			player.anim_default = anim.slice(0,3)
+        			player.anim_up = anim.slice(0,4)
+        			player.anim_down = anim.slice(0,4)
+        			player.anim_left = anim.slice(0,4)
+        			player.anim_right = anim.slice(0,4)
+
+        			player.setImage( player.anim_default.next() )
+        			jaws.context.mozImageSmoothingEnabled = false;  // non-blurry, blocky retro scaling
+        			jaws.preventDefaultKeys(["up", "down", "left", "right", "space"])
+
+				},   /* Called once */
+  				update: function() { 
+  					player.setImage( player.anim_default.next() )
+			        if(jaws.pressed("left"))  { player.move(-2,0);  player.setImage(player.anim_left.next()) }
+			        if(jaws.pressed("right")) { player.move(2,0);   player.setImage(player.anim_right.next()) }
+			        if(jaws.pressed("up"))    { player.move(0, -2); player.setImage(player.anim_up.next()) }
+			        if(jaws.pressed("down"))  { player.move(0, 2);  player.setImage(player.anim_down.next()) }
+
+			        jaws.forceInsideCanvas(player)
+  				},  /* Called each gametick */ 
+  				draw: function() { 
+  					jaws.clear()
+        			player.draw()
+  				}     /* Called each gametick after update() */
+
+			}
+
+			jaws.onload = function() {
+		      jaws.unpack()
+		      jaws.assets.add(["images/gb_walk.png"])
+		      jaws.start(game)  // Our convenience function jaws.start() will load assets, call setup and loop update/draw in 60 FPS
+		    }
+		</script>
+	</head>
+	<body>
+		<canvas width=640 height=480></canvas>
+	</body>
+</html>
