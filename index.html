@@ -3,9 +3,69 @@
 	<head>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 		<script type="text/javascript" src="js/jaws-engine.js"></script>
+		<script src="http://192.168.250.189:1050/socket.io/socket.io.js"></script>
 		<script type="text/javascript">
-			var playerA;
-			var playerB;
+			var connected_players = [];
+			var socket = io.connect('http://192.168.250.189:1050/');
+		    socket.on('load_players', function (players) {
+		    	for (var i = 0; i < players.length; i++) {
+		    		var player = players[i].player;
+		    		var anim_data = players[i].anim;
+		    		loadPlayer(player, anim_data);
+		    	};
+		      	
+		    });
+		    socket.on('player_init', function (player, anim_data) {
+		    	localPlayer.key = player.key;
+		    });
+
+			function loadPlayer(player, anim_data) {
+		    	pp = new jaws.Sprite(player);
+	    		var anim = new jaws.Animation({offset: 0, sprite_sheet: "images/players.png", frame_size: [25,25], frame_duration: 100, orientation:"right"})
+	    		pp.anim_default = anim.slice(anim_data[0],anim_data[1])
+    			pp.anim_up = anim.slice(anim_data[2],anim_data[3])
+    			pp.anim_down = anim.slice(anim_data[4],anim_data[5])
+    			pp.anim_left = anim.slice(anim_data[6],anim_data[7])
+    			pp.anim_right = anim.slice(anim_data[8],anim_data[9])
+	    		pp.setImage( pp.anim_default.next() )
+	    		jaws.forceInsideCanvas(pp);
+	    		pp.key = player.key;
+				connected_players.push(pp);
+		    }
+
+		    socket.on('user_join', loadPlayer);
+		    socket.on('players_update', function (key, x , y, dir) {
+		    	var plr = null;
+		    	for (var i = 0; i < connected_players.length; i++) {
+		    		if(connected_players[i].key == key){
+		    			if(connected_players[i]){
+				    		switch(dir){
+				    			case "left":
+				    				connected_players[i].setImage( connected_players[i].anim_left.next() );
+				    				break;
+				    			case "right":
+				    				connected_players[i].setImage( connected_players[i].anim_right.next() );
+				    				break;
+				    			case "top":
+				    				connected_players[i].setImage( connected_players[i].anim_up.next() );
+				    				break;
+				    			case "bottom":
+				    				connected_players[i].setImage( connected_players[i].anim_down.next() );
+				    				break;
+				    		}
+				    		connected_players[i].x = x;
+				    		connected_players[i].y = y;
+				    	}
+		    			break;
+		    		}
+		    	};
+		    	
+		    });
+
+		   
+
+			var localPlayer;
+			//var playerB;
 
 			function random(){
 				return Math.floor((Math.random()*10)+20);
@@ -16,84 +76,89 @@
 				player.y = y;
 			}
 
-			function move(x, y){
-				if(jaws.collideRects(playerA.rect(),playerB.rect())){
+			function move(x, y, dir){
+				/* if(jaws.collideRects(localPlayer.rect(),playerB.rect())){
 		          	this.x -= x
 		          	this.y -= y
 	          	}else{
 	          		this.x += x
 		          	this.y += y	
-	          	}
+	          	} */
+
+          		this.x += x
+	          	this.y += y	
+
+	          	socket.emit('player_move', this.x, this.y, localPlayer.key, dir);
+		    	
+			}
+
+			function getRandomPosition(){
+				var x = Math.floor(Math.random() * 620) + 20;
+				var y = Math.floor(Math.random() * 460) + 40;
+				return [x,y];
 			}
 
 			var game = {
 				setup: function() { 
 					var tile_map = new TileMap({cell_size:[32,32]});
-					playerA = new jaws.Sprite({x:20, y:20, scale:1, anchor:'center'});
-					playerB = new jaws.Sprite({x:120, y:120, scale:1, anchor: 'center'});
-					playerA.move = move;
-					playerB.move = move;
+					var pos = getRandomPosition();
+					localPlayer = new jaws.Sprite({x:pos[0], y:pos[1], scale:1, anchor:'center'});
+					//playerB = new jaws.Sprite({x:120, y:120, scale:1, anchor: 'center'});
+					localPlayer.move = move;
+					//playerB.move = move;
 
 			    	var anim = new jaws.Animation({offset: 0, sprite_sheet: "images/players.png", frame_size: [25,25], frame_duration: 100, orientation:"right"})
 
-        			playerA.anim_default = anim.slice(24,25)
-        			playerA.anim_up = anim.slice(37,39)
-        			playerA.anim_down = anim.slice(0,3)
-        			playerA.anim_left = anim.slice(13,15)
-        			playerA.anim_right = anim.slice(24,27)
+        			localPlayer.anim_default = anim.slice(24,25)
+        			localPlayer.anim_up = anim.slice(37,39)
+        			localPlayer.anim_down = anim.slice(0,3)
+        			localPlayer.anim_left = anim.slice(13,15)
+        			localPlayer.anim_right = anim.slice(24,27)
 
 
-        			playerB.anim_default = anim.slice(28,29)
-        			playerB.anim_up = anim.slice(40,42)
-        			playerB.anim_down = anim.slice(4,6)
-        			playerB.anim_left = anim.slice(15,18)
-        			playerB.anim_right = anim.slice(28,30)
+        			//playerB.anim_default = anim.slice(28,29)
+        			//playerB.anim_up = anim.slice(40,42)
+        			//playerB.anim_down = anim.slice(4,6)
+        			//playerB.anim_left = anim.slice(15,18)
+        			//playerB.anim_right = anim.slice(28,30)
 
 
-        			playerA.setImage( playerA.anim_default.next() )
-        			playerB.setImage( playerB.anim_default.next() )
+        			localPlayer.setImage( localPlayer.anim_default.next() )
+        			//playerB.setImage( playerB.anim_default.next() )
 
         			jaws.context.mozImageSmoothingEnabled = true;  // non-blurry, blocky retro scaling
-        			jaws.preventDefaultKeys(["up", "down", "left", "right", "space", "a", "s", "d", "w"])
-
+        			jaws.preventDefaultKeys(["up", "down", "left", "right", "space"])//, "a", "s", "d", "w"
+        			socket.emit('players_init',localPlayer, [24,25,37,39,0,3,13,15,24,27]);
 				},   /* Called once */
   				update: function() { 
-  					playerA.setImage( playerA.anim_default.next() )
-  					playerB.setImage( playerB.anim_default.next() )
+  					localPlayer.setImage( localPlayer.anim_default.next() )
+  					//playerB.setImage( playerB.anim_default.next() )
 			        if(jaws.pressed("left"))  { 
-			        	playerA.move(-2,0);  playerA.setImage(playerA.anim_left.next()) 
+			        	localPlayer.move(-2, 0, "left");  localPlayer.setImage(localPlayer.anim_left.next()) 
 			        }
 			        if(jaws.pressed("right")) { 
-			        	playerA.move(2,0);   playerA.setImage(playerA.anim_right.next()) 
+			        	localPlayer.move(2, 0, "right");   localPlayer.setImage(localPlayer.anim_right.next()) 
 			        }
 			        if(jaws.pressed("up"))    { 
-			        	playerA.move(0, -2); playerA.setImage(playerA.anim_up.next()) 
+			        	localPlayer.move(0, -2, "top"); localPlayer.setImage(localPlayer.anim_up.next()) 
 			        }
 			        if(jaws.pressed("down"))  { 
-			        	$('.debug').empty().append(playerA.anim_down.next());
-			        	playerA.move(0, 2);  playerA.setImage(playerA.anim_down.next()) 
+			        	$('.debug').empty().append(localPlayer.anim_down.next());
+			        	localPlayer.move(0, 2, "bottom");  localPlayer.setImage(localPlayer.anim_down.next()) 
 			        }
+			        jaws.forceInsideCanvas(localPlayer)
+			        
+			       
 
-			        if(jaws.pressed("a"))  { 
-			        	playerB.move(-2,0);  playerB.setImage(playerB.anim_left.next()) 
-			        }
-			        if(jaws.pressed("d")) { 
-			        	playerB.move(2,0);   playerB.setImage(playerB.anim_right.next()) 
-			        }
-			        if(jaws.pressed("w"))    { 
-			        	playerB.move(0, -2); playerB.setImage(playerB.anim_up.next()) 
-			        }
-			        if(jaws.pressed("s"))  { 
-			        	playerB.move(0, 2);  playerB.setImage(playerB.anim_down.next()) 
-			        }
 
-			        jaws.forceInsideCanvas(playerA)
-			        jaws.forceInsideCanvas(playerB)
   				},  /* Called each gametick */ 
   				draw: function() { 
   					jaws.clear()
-        			playerA.draw()
-        			playerB.draw()
+        			localPlayer.draw()
+        			for (var i = 0; i < connected_players.length; i++) {
+        				connected_players[i].draw();
+        			};
+        			//playerB.draw()
   				}     /* Called each gametick after update() */
 
 			}
