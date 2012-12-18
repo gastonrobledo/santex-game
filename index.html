@@ -1,62 +1,125 @@
 <!DOCTYPE html> 
 <html>
 	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 		<script type="text/javascript" src="js/jaws-engine.js"></script>
 		<script type="text/javascript">
-			var player
+			var playerA;
+			var playerB;
+
+			function random(){
+				return Math.floor((Math.random()*10)+20);
+			}
+
+			function moveNear(player, x, y){
+				player.x = x;
+				player.y = y;
+			}
+
+			function move(x, y){
+				if(jaws.collideRects(playerA.rect(),playerB.rect())){
+		          	this.x -= x
+		          	this.y -= y
+	          	}else{
+	          		this.x += x
+		          	this.y += y	
+	          	}
+			}
+
 			var game = {
 				setup: function() { 
 					var tile_map = new TileMap({cell_size:[32,32]});
-					player = new jaws.Sprite({x:0, y:0, scale:1, anchor:'center'});
-					player.move = function(x, y) {
-			        	jaws.log("Player: " + player.rect().toString())
-			          
-			          	// Have our tile map return the items that occupy the cells which are touched by player.rect
-			          	// If there's any items inside player.rect, reverse the movement (-> stand still)
-			          	this.x += x
-			          	if(tile_map.atRect(player.rect()).length > 0) { this.x -= x }
+					playerA = new jaws.Sprite({x:20, y:20, scale:1, anchor:'center'});
+					playerB = new jaws.Sprite({x:120, y:120, scale:1, anchor: 'center'});
+					playerA.move = move;
+					playerB.move = move;
 
-			          	// Same as above but for vertical movement
-			          	this.y += y
-			          	if(tile_map.atRect(player.rect()).length > 0) { this.y -= y }
-			        }
+			    	var anim = new jaws.Animation({offset: 0, sprite_sheet: "images/players.png", frame_size: [25,25], frame_duration: 100, orientation:"right"})
 
-			    	var anim = new jaws.Animation({sprite_sheet: "images/gb_walk.png", frame_size: [100,250], frame_duration: 100, orientation:"right"})
-        			player.anim_default = anim.slice(0,3)
-        			player.anim_up = anim.slice(0,4)
-        			player.anim_down = anim.slice(0,4)
-        			player.anim_left = anim.slice(0,4)
-        			player.anim_right = anim.slice(0,4)
+        			playerA.anim_default = anim.slice(24,25)
+        			playerA.anim_up = anim.slice(37,39)
+        			playerA.anim_down = anim.slice(0,3)
+        			playerA.anim_left = anim.slice(13,15)
+        			playerA.anim_right = anim.slice(24,27)
 
-        			player.setImage( player.anim_default.next() )
-        			jaws.context.mozImageSmoothingEnabled = false;  // non-blurry, blocky retro scaling
-        			jaws.preventDefaultKeys(["up", "down", "left", "right", "space"])
+
+        			playerB.anim_default = anim.slice(28,29)
+        			playerB.anim_up = anim.slice(40,42)
+        			playerB.anim_down = anim.slice(4,6)
+        			playerB.anim_left = anim.slice(15,18)
+        			playerB.anim_right = anim.slice(28,30)
+
+
+        			playerA.setImage( playerA.anim_default.next() )
+        			playerB.setImage( playerB.anim_default.next() )
+
+        			jaws.context.mozImageSmoothingEnabled = true;  // non-blurry, blocky retro scaling
+        			jaws.preventDefaultKeys(["up", "down", "left", "right", "space", "a", "s", "d", "w"])
 
 				},   /* Called once */
   				update: function() { 
-  					player.setImage( player.anim_default.next() )
-			        if(jaws.pressed("left"))  { player.move(-2,0);  player.setImage(player.anim_left.next()) }
-			        if(jaws.pressed("right")) { player.move(2,0);   player.setImage(player.anim_right.next()) }
-			        if(jaws.pressed("up"))    { player.move(0, -2); player.setImage(player.anim_up.next()) }
-			        if(jaws.pressed("down"))  { player.move(0, 2);  player.setImage(player.anim_down.next()) }
+  					playerA.setImage( playerA.anim_default.next() )
+  					playerB.setImage( playerB.anim_default.next() )
+			        if(jaws.pressed("left"))  { 
+			        	playerA.move(-2,0);  playerA.setImage(playerA.anim_left.next()) 
+			        }
+			        if(jaws.pressed("right")) { 
+			        	playerA.move(2,0);   playerA.setImage(playerA.anim_right.next()) 
+			        }
+			        if(jaws.pressed("up"))    { 
+			        	playerA.move(0, -2); playerA.setImage(playerA.anim_up.next()) 
+			        }
+			        if(jaws.pressed("down"))  { 
+			        	$('.debug').empty().append(playerA.anim_down.next());
+			        	playerA.move(0, 2);  playerA.setImage(playerA.anim_down.next()) 
+			        }
 
-			        jaws.forceInsideCanvas(player)
+			        if(jaws.pressed("a"))  { 
+			        	playerB.move(-2,0);  playerB.setImage(playerB.anim_left.next()) 
+			        }
+			        if(jaws.pressed("d")) { 
+			        	playerB.move(2,0);   playerB.setImage(playerB.anim_right.next()) 
+			        }
+			        if(jaws.pressed("w"))    { 
+			        	playerB.move(0, -2); playerB.setImage(playerB.anim_up.next()) 
+			        }
+			        if(jaws.pressed("s"))  { 
+			        	playerB.move(0, 2);  playerB.setImage(playerB.anim_down.next()) 
+			        }
+
+			        jaws.forceInsideCanvas(playerA)
+			        jaws.forceInsideCanvas(playerB)
   				},  /* Called each gametick */ 
   				draw: function() { 
   					jaws.clear()
-        			player.draw()
+        			playerA.draw()
+        			playerB.draw()
   				}     /* Called each gametick after update() */
 
 			}
 
 			jaws.onload = function() {
 		      jaws.unpack()
-		      jaws.assets.add(["images/gb_walk.png"])
+		      jaws.assets.add(["images/players.png"])
 		      jaws.start(game)  // Our convenience function jaws.start() will load assets, call setup and loop update/draw in 60 FPS
 		    }
 		</script>
+		<style type="text/css">
+			.debug{
+
+				position: absolute;
+				right:10px;
+				top: 10px;
+				width: 100px;
+				height: 250px;
+				overflow: auto;
+				background: #000;
+				color:#FFF;
+			}
+		</style>
 	</head>
 	<body>
+		<div class="debug"></div>
 		<canvas width=640 height=480></canvas>
 	</body>
 </html>
