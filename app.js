@@ -4,7 +4,7 @@ var fs = require('fs')
     , mime = require('mime')
     , url = require('url');
 
-var players = [];
+var players = {};
  
 var server = http.createServer(function(req, res) {
     res.writeHead(200, { 'Content-type': 'text/html'});
@@ -33,7 +33,8 @@ var server = http.createServer(function(req, res) {
 }).listen(8080);
  
 socketio.listen(1050).on('connection', function (socket) {
-	socket.emit('load_players', players);
+	
+    
 
     socket.on('message', function (msg) {
         console.log('Message Received: ', msg);
@@ -44,13 +45,30 @@ socketio.listen(1050).on('connection', function (socket) {
     socket.on('players_init', function(player, anim_data){
     	tmp = JSON.parse(player);
     	tmp.key = socket.id;
-    	players.push({player:tmp,anim:anim_data});
-    	console.log('Player Added: ', tmp , anim_data);
+        var currentPlayer = {player:tmp,anim:anim_data};
+    	players[tmp.key] = currentPlayer;
+
     	socket.emit('player_init', tmp , anim_data);
     	socket.broadcast.emit("user_join", tmp , anim_data);
+        console.log("----------> players: " , players);
+        console.log("----------> players: " , players.length);
+        socket.emit('load_players', players);
     });
 
     socket.on('player_move', function(x, y, key, dir){
+        console.log("PLAYER KEY: ", players[key]);
+        console.log("params KEY: ", key);
+        players[key].player.x = x;
+        players[key].player.y = y;
+        players[key].player.dir = dir;
+            
+                    
     	socket.broadcast.emit("players_update", key, x, y, dir);
+    });
+
+    socket.on('disconnect', function(){
+        // or here
+        delete players[socket.id];
+        socket.broadcast.emit("user_disconnect", socket.id);
     });
 });

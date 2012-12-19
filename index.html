@@ -3,12 +3,12 @@
 	<head>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 		<script type="text/javascript" src="js/jaws-engine.js"></script>
-		<script src="http://192.168.250.189:1050/socket.io/socket.io.js"></script>
+		<script src="http://localhost:1050/socket.io/socket.io.js"></script>
 		<script type="text/javascript">
 			var connected_players = [];
-			var socket = io.connect('http://192.168.250.189:1050/');
+			var socket = io.connect('http://localhost:1050/');
 		    socket.on('load_players', function (players) {
-		    	for (var i = 0; i < players.length; i++) {
+		    	for (var i in players) {
 		    		var player = players[i].player;
 		    		var anim_data = players[i].anim;
 		    		loadPlayer(player, anim_data);
@@ -19,47 +19,48 @@
 		    	localPlayer.key = player.key;
 		    });
 
+		    socket.on('user_disconnect', function (key) {
+		    	delete connected_players[key];
+
+		    });
+
 			function loadPlayer(player, anim_data) {
-		    	pp = new jaws.Sprite(player);
-	    		var anim = new jaws.Animation({offset: 0, sprite_sheet: "images/players.png", frame_size: [25,25], frame_duration: 100, orientation:"right"})
-	    		pp.anim_default = anim.slice(anim_data[0],anim_data[1])
-    			pp.anim_up = anim.slice(anim_data[2],anim_data[3])
-    			pp.anim_down = anim.slice(anim_data[4],anim_data[5])
-    			pp.anim_left = anim.slice(anim_data[6],anim_data[7])
-    			pp.anim_right = anim.slice(anim_data[8],anim_data[9])
-	    		pp.setImage( pp.anim_default.next() )
-	    		jaws.forceInsideCanvas(pp);
-	    		pp.key = player.key;
-				connected_players.push(pp);
+				if(player.key != localPlayer.key){
+			    	pp = new jaws.Sprite(player);
+		    		var anim = new jaws.Animation({offset: 0, sprite_sheet: "images/players.png", frame_size: [25,25], frame_duration: 100, orientation:"right"})
+		    		pp.anim_default = anim.slice(anim_data[0],anim_data[1])
+	    			pp.anim_up = anim.slice(anim_data[2],anim_data[3])
+	    			pp.anim_down = anim.slice(anim_data[4],anim_data[5])
+	    			pp.anim_left = anim.slice(anim_data[6],anim_data[7])
+	    			pp.anim_right = anim.slice(anim_data[8],anim_data[9])
+		    		pp.setImage( pp.anim_default.next() )
+		    		jaws.forceInsideCanvas(pp);
+		    		pp.key = player.key;
+					connected_players[player.key] = pp;
+				}
 		    }
 
 		    socket.on('user_join', loadPlayer);
 		    socket.on('players_update', function (key, x , y, dir) {
 		    	var plr = null;
-		    	for (var i = 0; i < connected_players.length; i++) {
-		    		if(connected_players[i].key == key){
-		    			if(connected_players[i]){
-				    		switch(dir){
-				    			case "left":
-				    				connected_players[i].setImage( connected_players[i].anim_left.next() );
-				    				break;
-				    			case "right":
-				    				connected_players[i].setImage( connected_players[i].anim_right.next() );
-				    				break;
-				    			case "top":
-				    				connected_players[i].setImage( connected_players[i].anim_up.next() );
-				    				break;
-				    			case "bottom":
-				    				connected_players[i].setImage( connected_players[i].anim_down.next() );
-				    				break;
-				    		}
-				    		connected_players[i].x = x;
-				    		connected_players[i].y = y;
-				    	}
-		    			break;
+    			if(connected_players[key]){
+		    		switch(dir){
+		    			case "left":
+		    				connected_players[key].setImage( connected_players[key].anim_left.next() );
+		    				break;
+		    			case "right":
+		    				connected_players[key].setImage( connected_players[key].anim_right.next() );
+		    				break;
+		    			case "top":
+		    				connected_players[key].setImage( connected_players[key].anim_up.next() );
+		    				break;
+		    			case "bottom":
+		    				connected_players[key].setImage( connected_players[key].anim_down.next() );
+		    				break;
 		    		}
-		    	};
-		    	
+		    		connected_players[key].x = x;
+		    		connected_players[key].y = y;
+		    	}
 		    });
 
 		   
@@ -155,7 +156,7 @@
   				draw: function() { 
   					jaws.clear()
         			localPlayer.draw()
-        			for (var i = 0; i < connected_players.length; i++) {
+        			for (var i in connected_players) {
         				connected_players[i].draw();
         			};
         			//playerB.draw()
